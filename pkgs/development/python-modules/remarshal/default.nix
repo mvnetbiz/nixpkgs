@@ -42,7 +42,14 @@ buildPythonApplication rec {
     cbor2
     python-dateutil
     pyyaml
-    tomlkit
+    (tomlkit.overridePythonAttrs (oldAttrs: rec {
+      version = "0.7.2";
+      src = oldAttrs.src.override {
+        inherit version;
+        sha256 = "d7a454f319a7e9bd2e249f239168729327e4dd2d27b17dc68be264ad1ce36754";
+      };
+    }))
+
     u-msgpack-python
   ];
 
