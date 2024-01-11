@@ -71,16 +71,21 @@ let
 
   mkUnits = prefix: name: fs: let
     mountUnit = "${utils.escapeSystemdPath (prefix + (lib.removeSuffix "/" fs.mountPoint))}.mount";
-    device = firstDevice fs;
-    deviceUnit = "${utils.escapeSystemdPath device}.device";
+    devicePath = dev:
+      if lib.hasPrefix "OLD_BLKID_UUID=" dev
+      then "/dev/disk/by-uuid/" + (lib.removePrefix "OLD_BLKID_UUID=" dev)
+      else dev;
+    devices = map devicePath (lib.splitString ":" fs.device);
+    device = lib.head devices;
+    deviceUnits = map (d: "${utils.escapeSystemdPath d}.device") devices;
   in {
     name = "unlock-bcachefs-${utils.escapeSystemdPath fs.mountPoint}";
     value = {
       description = "Unlock bcachefs for ${fs.mountPoint}";
       requiredBy = [ mountUnit ];
-      after = [ deviceUnit ];
+      after = deviceUnits;
       before = [ mountUnit "shutdown.target" ];
-      bindsTo = [ deviceUnit ];
+      bindsTo = deviceUnits;
       conflicts = [ "shutdown.target" ];
       unitConfig.DefaultDependencies = false;
       serviceConfig = {
